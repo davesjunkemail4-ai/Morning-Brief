@@ -1,0 +1,78 @@
+# Morning Brief — Setup & Deployment Guide
+
+## What you have
+A Node.js app with:
+- Express backend that fetches RSS feeds server-side (no CORS issues)
+- Claude AI analysis for every episode (TL;DR, takeaways, topics, worth rating)
+- Clean newspaper-style frontend
+
+---
+
+## Step 1 — Get your Anthropic API key
+
+1. Go to https://console.anthropic.com
+2. Sign in (or create a free account)
+3. Click "API Keys" → "Create Key"
+4. Copy the key (starts with `sk-ant-...`)
+
+---
+
+## Step 2 — Deploy to Render (free hosting)
+
+Render is free, reliable, and takes 5 minutes to set up.
+
+### 2a — Put the code on GitHub
+1. Go to https://github.com and create a free account if needed
+2. Click the "+" button → "New repository"
+3. Name it `morning-brief`, make it Private, click Create
+4. Upload all the files from the `morning-brief` folder you downloaded
+
+### 2b — Deploy on Render
+1. Go to https://render.com and sign up (free)
+2. Click "New +" → "Web Service"
+3. Connect your GitHub account and select the `morning-brief` repo
+4. Fill in:
+   - **Name:** morning-brief
+   - **Runtime:** Node
+   - **Build Command:** `npm install`
+   - **Start Command:** `npm start`
+5. Click "Add Environment Variable":
+   - Key: `ANTHROPIC_API_KEY`
+   - Value: your key from Step 1
+6. Click "Create Web Service"
+
+Render will build and deploy in ~2 minutes. You'll get a URL like:
+`https://morning-brief-xxxx.onrender.com`
+
+**Bookmark that URL.** Open it every morning, tap the button.
+
+---
+
+## Step 3 — Run locally (optional, for testing)
+
+```bash
+# In the morning-brief folder:
+npm install
+cp .env.example .env
+# Edit .env and paste your API key
+npm start
+# Open http://localhost:3000
+```
+
+---
+
+## Notes
+- Free Render apps "sleep" after 15 min of inactivity — first load each day takes ~30 seconds to wake up
+- To avoid this, upgrade to Render's $7/mo paid plan or use Railway.app (similar, also free tier)
+- All 20 podcast feeds are pre-configured — you can add more by editing `server/index.js`
+
+---
+
+## Next steps (mobile app)
+When you're ready to build the iOS/Android app:
+- This backend stays exactly as-is
+- We add React Native frontend that calls the same `/api/fetch/:index` endpoints
+- Push notifications via Expo
+- App Store + Play Store submission
+
+The hard part is already done.
