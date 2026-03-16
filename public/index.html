@@ -6,31 +6,232 @@
 <title>Morning Brief - Podcast Digest</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-  :root { --ink: #0d0d0d; --paper: #f5f0e8; --cream: #ede8db; --accent: #c8401a; --gold: #b8933f; --muted: #7a7060; --card-bg: #faf7f2; --border: #d4ccbb; }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--paper); color: var(--ink); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
-  .masthead { background: var(--ink); color: var(--paper); text-align: center; padding: 28px 20px 20px; }
-  .masthead-top { display: flex; justify-content: space-between; align-items: center; max-width: 900px; margin: 0 auto 12px; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(245,240,232,0.5); }
-  .masthead h1 { font-family: 'Playfair Display', serif; font-size: clamp(2.2rem, 6vw, 3.8rem); font-weight: 900; letter-spacing: -0.02em; line-height: 1; }
-  .masthead h1 span { color: var(--accent); }
-  .masthead-sub { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(245,240,232,0.45); margin-top: 8px; }
-  .rule { height: 1px; background: rgba(245,240,232,0.15); margin: 14px auto 0; max-width: 900px; }
-  .container { max-width: 900px; margin: 0 auto; padding: 0 20px 60px; }
-  .datebar { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 2px solid var(--ink); margin-bottom: 24px; }
-  .datebar-date { font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 700; }
-  .datebar-count { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
-  .refresh-btn { background: var(--accent); color: white; border: none; padding: 14px 28px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; justify-content: center; margin-bottom: 20px; transition: background 0.2s; }
-  .refresh-btn:hover { background: #a8331a; }
-  .refresh-btn:disabled { background: var(--muted); cursor: not-allowed; }
-  .spinning { animation: spin 1s linear infinite; display: inline-block; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .status-bar { background: var(--cream); border: 1px solid var(--border); padding: 10px 16px; font-size: 12px; color: var(--muted); margin-bottom: 16px; display: none; align-items: center; gap: 8px; }
-  .status-bar.visible { display: flex; }
-  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; animation: pulse 1.2s ease-in-out infinite; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-  .progress-bar { height: 3px; background: var(--border); margin-bottom: 20px; overflow: hidden; border-radius: 2px; display: none; }
-  .progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.3s ease; }
-  .section-label { font-size: 10px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); padding: 10px 0 8px; border-bottom: 1px solid var(--border); margin-bottom: 0; display: flex; justify-content: space-between; align-items: center; }
-  .new-tag { background: var(--accent); color: white; font-size: 9px; padding: 2px 7px; letter-spacing: 0.1em; }
-  .episodes-grid { display: flex; flex-direction: column; gap: 1px; background: var(--border); border: 1px solid var(--border); margin-bottom: 32px; }
-  .episode-card { background: var(--card-bg); }
+:root { --ink: #0d0d0d; --paper: #f5f0e8; --cream: #ede8db; --accent: #c8401a; --gold: #b8933f; --muted: #7a7060; --card-bg: #faf7f2; --border: #d4ccbb; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--paper); color: var(--ink); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+.masthead { background: var(--ink); color: var(--paper); text-align: center; padding: 28px 20px 20px; }
+.masthead-top { display: flex; justify-content: space-between; align-items: center; max-width: 900px; margin: 0 auto 12px; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(245,240,232,0.45); }
+.masthead h1 { font-family: 'Playfair Display', serif; font-size: clamp(2.2rem, 6vw, 3.8rem); font-weight: 900; letter-spacing: -0.02em; line-height: 1; }
+.masthead h1 span { color: var(--accent); }
+.masthead-sub { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(245,240,232,0.45); margin-top: 8px; }
+.rule { height: 1px; background: rgba(245,240,232,0.15); margin: 14px auto 0; max-width: 900px; }
+.container { max-width: 900px; margin: 0 auto; padding: 0 20px 60px; }
+.datebar { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 2px solid var(--ink); margin-bottom: 24px; }
+.datebar-date { font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 700; }
+.datebar-count { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.refresh-btn { background: var(--accent); color: white; border: none; padding: 10px 24px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; letter-spacing: 0.05em; cursor: pointer; transition: background 0.2s; }
+.refresh-btn:hover { background: #a8331a; }
+.refresh-btn:disabled { background: var(--muted); cursor: not-allowed; }
+.spinning { animation: spin 1s linear infinite; display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.status-bar { background: var(--cream); border: 1px solid var(--border); padding: 10px 16px; font-size: 12px; color: var(--muted); margin-bottom: 16px; display: none; }
+.status-bar.visible { display: block; }
+.grid { display: grid; grid-template-columns: 1fr; gap: 1px; background: var(--border); border: 1px solid var(--border); }
+.card { background: var(--card-bg); padding: 22px 24px; position: relative; }
+.card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; gap: 12px; }
+.card-podcast { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent); font-weight: 500; margin-bottom: 4px; }
+.card-title { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 700; line-height: 1.3; }
+.card-title a { color: inherit; text-decoration: none; }
+.card-title a:hover { color: var(--accent); }
+.card-meta { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.worth-badge { flex-shrink: 0; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 10px; font-weight: 500; white-space: nowrap; }
+.worth-YES { background: #2d5a27; color: #b8e6b0; }
+.worth-MAYBE { background: #5a4a1a; color: #e6d890; }
+.worth-NO { background: #3a2020; color: #e6a090; }
+.tldr { background: var(--cream); border-left: 3px solid var(--accent); padding: 12px 16px; margin: 12px 0; min-height: 52px; }
+.tldr-label { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
+.tldr p { font-size: 14px; line-height: 1.6; font-style: italic; color: var(--ink); }
+.section-label { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; margin-top: 12px; }
+.takeaways { list-style: none; padding: 0; }
+.takeaways li { font-size: 13px; line-height: 1.5; padding: 5px 0 5px 14px; border-bottom: 1px solid var(--border); color: var(--ink); position: relative; }
+.takeaways li:last-child { border-bottom: none; }
+.takeaways li::before { content: '—'; position: absolute; left: 0; color: var(--gold); }
+.topics { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.topic-tag { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; padding: 3px 10px; background: var(--cream); border: 1px solid var(--border); color: var(--muted); }
+.card-loading { opacity: 0.5; }
+.loading-placeholder { height: 14px; background: var(--cream); border-radius: 2px; margin: 4px 0; }
+.loading-placeholder.short { width: 60%; }
+.loading-placeholder.medium { width: 80%; }
+.error-card { background: #fff5f5; border-left: 3px solid #c8401a; padding: 16px; font-size: 13px; color: var(--muted); }
+.worth-reason { font-size: 12px; color: var(--muted); font-style: italic; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+@media (max-width: 600px) { .card { padding: 16px; } .card-title { font-size: 15px; } }
+</style>
+</head>
+<body>
+<header class="masthead">
+  <div class="masthead-top">
+    <span>Morning Brief</span>
+    <span>Financial Advisor Edition</span>
+  </div>
+  <h1>Morning <span>Brief</span></h1>
+  <p class="masthead-sub">Podcast Intelligence Digest</p>
+  <div class="rule"></div>
+</header>
+<main class="container">
+  <div class="datebar">
+    <div>
+      <div class="datebar-date" id="today-date"></div>
+      <div class="datebar-count" id="pod-count"></div>
+    </div>
+    <button class="refresh-btn" id="refresh-btn" onclick="loadAll()">&#8635; Refresh</button>
+  </div>
+  <div class="status-bar" id="status-bar"></div>
+  <div class="grid" id="grid"></div>
+</main>
+<script>
+var podcasts = [];
+var loaded = 0;
+var total = 0;
+
+function formatDate(d) {
+  var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  return days[d.getDay()] + ', ' + months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+}
+
+function setStatus(msg) {
+  var bar = document.getElementById('status-bar');
+  bar.textContent = msg;
+  bar.className = 'status-bar visible';
+}
+
+function hideStatus() {
+  document.getElementById('status-bar').className = 'status-bar';
+}
+
+function renderSkeleton(idx, name) {
+  return '<div class="card card-loading" id="card-' + idx + '">' +
+    '<div class="card-podcast">' + name + '</div>' +
+    '<div class="loading-placeholder medium"></div>' +
+    '<div class="loading-placeholder short" style="margin-top:8px"></div>' +
+    '<div class="tldr"><div class="loading-placeholder medium"></div><div class="loading-placeholder" style="margin-top:6px"></div></div>' +
+    '</div>';
+}
+
+function renderCard(idx, data) {
+  var ep = data.episode;
+  var a = data.analysis;
+  var podName = data.podcast || '';
+
+  var dateStr = '';
+  if (ep.date) {
+    try { dateStr = new Date(ep.date).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}); } catch(e) {}
+  }
+
+  var worthBadge = '';
+  if (a && a.worthListening) {
+    worthBadge = '<span class="worth-badge worth-' + a.worthListening + '">' + a.worthListening + '</span>';
+  }
+
+  var tldrText = (a && a.tldr) ? a.tldr : ep.description || 'No summary available.';
+  var tldrHtml = '<div class="tldr"><div class="tldr-label">TL;DR</div><p>' + escHtml(tldrText) + '</p></div>';
+
+  var takeawaysHtml = '';
+  if (a && a.keyTakeaways && a.keyTakeaways.length) {
+    takeawaysHtml = '<div class="section-label">Key Takeaways</div><ul class="takeaways">';
+    a.keyTakeaways.forEach(function(t) { takeawaysHtml += '<li>' + escHtml(t) + '</li>'; });
+    takeawaysHtml += '</ul>';
+  }
+
+  var topicsHtml = '';
+  if (a && a.topics && a.topics.length) {
+    topicsHtml = '<div class="section-label">Topics</div><div class="topics">';
+    a.topics.forEach(function(t) { topicsHtml += '<span class="topic-tag">' + escHtml(t) + '</span>'; });
+    topicsHtml += '</div>';
+  }
+
+  var worthReasonHtml = '';
+  if (a && a.worthReason) {
+    worthReasonHtml = '<div class="worth-reason">' + escHtml(a.worthReason) + '</div>';
+  }
+
+  return '<div class="card" id="card-' + idx + '">' +
+    '<div class="card-header">' +
+      '<div>' +
+        '<div class="card-podcast">' + escHtml(podName) + '</div>' +
+        '<div class="card-title"><a href="' + (ep.link || '#') + '" target="_blank">' + escHtml(ep.title || 'Untitled') + '</a></div>' +
+        (dateStr ? '<div class="card-meta">' + dateStr + (ep.duration ? ' &middot; ' + Math.round(ep.duration/60) + ' min' : '') + '</div>' : '') +
+      '</div>' +
+      worthBadge +
+    '</div>' +
+    tldrHtml +
+    takeawaysHtml +
+    topicsHtml +
+    worthReasonHtml +
+  '</div>';
+}
+
+function escHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderError(idx, name, msg) {
+  return '<div class="card" id="card-' + idx + '">' +
+    '<div class="card-podcast">' + escHtml(name) + '</div>' +
+    '<div class="error-card">Could not load feed: ' + escHtml(msg) + '</div>' +
+  '</div>';
+}
+
+async function fetchCard(idx) {
+  try {
+    var res = await fetch('/api/fetch/' + idx);
+    var data = await res.json();
+    if (!data.success) {
+      document.getElementById('card-' + idx).outerHTML = renderError(idx, podcasts[idx] ? podcasts[idx].name : '', data.error || 'Unknown error');
+    } else {
+      document.getElementById('card-' + idx).outerHTML = renderCard(idx, data);
+    }
+  } catch(e) {
+    var name = podcasts[idx] ? podcasts[idx].name : 'Podcast ' + idx;
+    document.getElementById('card-' + idx).outerHTML = renderError(idx, name, e.message);
+  }
+  loaded++;
+  setStatus('Loading podcasts... ' + loaded + ' of ' + total + ' complete');
+  if (loaded >= total) {
+    hideStatus();
+    document.getElementById('refresh-btn').disabled = false;
+    document.getElementById('refresh-btn').innerHTML = '&#8635; Refresh';
+    document.getElementById('pod-count').textContent = total + ' podcasts loaded';
+  }
+}
+
+async function loadAll() {
+  loaded = 0;
+  var btn = document.getElementById('refresh-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinning">&#8635;</span> Loading...';
+  setStatus('Fetching podcast list...');
+
+  try {
+    var res = await fetch('/api/podcasts');
+    podcasts = await res.json();
+    total = podcasts.length;
+    document.getElementById('pod-count').textContent = 'Loading ' + total + ' podcasts...';
+
+    var grid = document.getElementById('grid');
+    grid.innerHTML = podcasts.map(function(p, i) { return renderSkeleton(i, p.name); }).join('');
+
+    setStatus('Loading podcasts... 0 of ' + total + ' complete');
+
+    // Load in batches of 4 to avoid overwhelming the server
+    var batchSize = 4;
+    for (var i = 0; i < total; i += batchSize) {
+      var batch = [];
+      for (var j = i; j < Math.min(i + batchSize, total); j++) {
+        batch.push(fetchCard(j));
+      }
+      await Promise.all(batch);
+    }
+  } catch(e) {
+    setStatus('Error loading podcasts: ' + e.message);
+    btn.disabled = false;
+    btn.innerHTML = '&#8635; Refresh';
+  }
+}
+
+document.getElementById('today-date').textContent = formatDate(new Date());
+loadAll();
+</script>
+</body>
+</html>
