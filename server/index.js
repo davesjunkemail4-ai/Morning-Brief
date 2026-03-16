@@ -33,62 +33,45 @@ const PODCASTS = [
   { name: "The White Coat Investor", rss: "https://whitecoatinvestor.libsyn.com/rss" }
 ];
 
-async function fetchRSS(rssUrl) {
-  const res = await fetch(rssUrl, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; PodcastDigest/1.0)' }, timeout: 10000 });
+function stripHTML(html) {
+  if (!html) return '';
+  return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+async function fetchRSS(url) {
+  const res = await fetch(url, { timeout: 10000, headers: { 'User-Agent': 'Mozilla/5.0 (compatible; MorningBrief/1.0)' } });
   if (!res.ok) throw new Error('HTTP ' + res.status);
   const xml = await res.text();
-  const parsed = await xml2js.parseStringPromise(xml, { explicitArray: false, ignoreAttrs: false });
-  const channel = (parsed && parsed.rss && parsed.rss.channel) || (parsed && parsed.feed);
-  if (!channel) throw new Error('No channel found');
-  const rawItems = channel.item || channel.entry || [];
-  const items = Array.isArray(rawItems) ? rawItems : [rawItems];
-  return items.slice(0, 3).map(function(item) {
-    const title = (item.title && item.title._) || item.title || 'Untitled';
-    const pubDate = item.pubDate || item.published || item.updated || '';
-    const description = (item.description && item.description._) || item.description || item['content:encoded'] || (item.summary && item.summary._) || item.summary || '';
-    const link = (typeof item.link === 'object' ? (item.link && item.link.$ && item.link.$.href) || (item.link && item.link._) || '' : item.link) || '';
-    const duration = item['itunes:duration'] || '';
-    const transcriptEl = item['podcast:transcript'];
-    let transcriptUrl = null;
-    if (transcriptEl) {
-      if (Array.isArray(transcriptEl)) {
-        const plain = transcriptEl.find(function(t) { return t.$ && (t.$.type === 'text/plain' || t.$.type === 'text/html'); });
-        const chosen = plain || transcriptEl[0];
-        transcriptUrl = chosen && chosen.$ && chosen.$.url;
-      } else if (transcriptEl.$ && transcriptEl.$.url) {
-        transcriptUrl = transcriptEl.$.url;
+  const parsed = await xml2js.parseStringPromise(xml, { explicitArray: false });
+  const channel = parsed.rss.channel;
+  const items = Array.isArray(channel.item) ? channel.item : [channel.item];
+  return items.filter(Boolean).map(function(item) {
+    var transcriptUrl = null;
+    var ns = item['podcast:transcript'];
+    if (ns) {
+      var t = Array.isArray(ns) ? ns[0] : ns;
+      if (t && t['$'] && (t['$'].type === 'text/plain' || t['$'].type === 'text/html' || t['$'].type === 'text/vtt')) {
+        transcriptUrl = t['$'].url;
       }
     }
     return {
-      title: typeof title === 'string' ? title.trim() : String(title).trim(),
-      date: pubDate ? new Date(pubDate) : new Date(),
-      description: typeof description === 'string' ? description : String(description),
-      link: typeof link === 'string' ? link.trim() : '',
-      duration: typeof duration === 'string' ? duration.trim() : '',
-      transcriptUrl: transcriptUrl || null
+      title: item.title || '',
+      date: item.pubDate || '',
+      link: item.link || '',
+      duration: (item['itunes:duration'] || ''),
+      description: stripHTML(item.description || item['content:encoded'] || ''),
+      transcriptUrl: transcriptUrl,
+      hasTranscript: !!transcriptUrl
     };
   });
 }
 
 async function fetchTranscript(url) {
-  try {
-    const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; PodcastDigest/1.0)' }, timeout: 12000 });
-    if (!res.ok) return null;
-    const text = await res.text();
-    if (text.trim().startsWith('{')) {
-      try {
-        const data = JSON.parse(text);
-        if (data.body) return stripHTML(data.body).slice(0, 8000);
-        if (data.text) return data.text.slice(0, 8000);
-        if (Array.isArray(data.segments)) return data.segments.map(function(s) { return s.body || s.text || ''; }).join(' ').slice(0, 8000);
-      } catch(e) {}
-    }
-    return stripHTML(text).slice(0, 8000);
-  } catch(e) { return null; }
-}
-
-function stripHTML(html) {
-  return (html || '').replace(/<[^>]*>/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ').replace(/&#\d+;/g, '').replace(/\s+/g, ' ').trim();
+  var res = await fetch(url, { timeout: 15000 });
+  if (!res.ok) throw new Error('Transcript HTTP ' + res.status);
+  var text = await res.text();
+  text = text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  return text.slice(0, 8000);
 }
 
 async function analyzeWithClaude(podName, epTitle, description, transcript) {
@@ -96,7 +79,7 @@ async function analyzeWithClaude(podName, epTitle, description, transcript) {
   if (!apiKey) { console.error('No ANTHROPIC_API_KEY set'); return null; }
   const content = transcript ? transcript.slice(0, 5000) : stripHTML(description).slice(0, 2500);
   const sourceType = transcript ? 'transcript excerpt' : 'show notes';
-  const prompt = 'You are summarizing podcast episodes for a busy financial advisor.\nPodcast: "' + podName + '"\nEpisode: "' + epTitle + '"\nSource: ' + sourceType + '\nContent: "' + (content || '(no content)') + '"\n\nReturn ONLY raw JSON:\n{"tldr":"one punchy sentence under 20 words","keyTakeaways":["takeaway 1","takeaway 2","takeaway 3"],"topics":["topic 1","topic 2","topic 3"],"worthListening":"YES","worthReason":"one sentence"}\nworthListening: YES=actionable/important, MAYBE=interesting not essential, NO=filler/promotional';
+  const prompt = 'You are analyzing podcast episodes for a busy financial advisor to help them prioritize listening time.\nPodcast: "' + podName + '"\nEpisode: "' + epTitle + '"\nSource: ' + sourceType + '\nContent: "' + (content || '(no content)') + '"\n\nReturn ONLY raw JSON:\n{"tldr":"one punchy sentence under 20 words","keyTakeaways":["takeaway 1","takeaway 2","takeaway 3"],"topics":["topic 1","topic 2","topic 3"],"tier":"1","tierReason":"one sentence explaining the tier assignment"}\n\nTIER CRITERIA (assign the single best-matching tier):\ntier "1" = PRIORITY: episode primarily covers marketing strategies for financial advisors OR market/economic updates (Fed policy, interest rates, market outlook, economic data, investment commentary)\ntier "2" = VALUABLE: episode primarily covers retirement planning strategies, estate planning, or tax updates/strategies\ntier "3" = OPTIONAL: client conversation topics, advisor wellness/health/happiness/mindset, practice management, general business content, or anything else\nAUTOMATIC DOWNGRADE: if the episode is primarily promotional, sponsor-heavy, or a product/service pitch, increase the tier number by 1 (tier 1 becomes tier 2, tier 2 becomes tier 3)';
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -116,7 +99,7 @@ async function analyzeWithClaude(podName, epTitle, description, transcript) {
   }
 }
 
-app.get('/api/podcasts', function(req, res) { res.json(PODCASTS.map(function(p) { return { name: p.name }; })); });
+app.get('/api/podcasts', function(req, res) { res.json(PODCASTS.map(function(p) { return { name: p.name, rss: p.rss }; })); });
 
 app.get('/api/fetch/:index', async function(req, res) {
   const idx = parseInt(req.params.index);
@@ -127,15 +110,15 @@ app.get('/api/fetch/:index', async function(req, res) {
     const ep = items[0];
     let transcript = null;
     if (ep.transcriptUrl) {
-      try { transcript = await fetchTranscript(ep.transcriptUrl); } catch(e) { console.error('Transcript error:', e.message); }
+      try { transcript = await fetchTranscript(ep.transcriptUrl); } catch(e) { console.error('Transcript fetch error:', e.message); }
     }
     const analysis = await analyzeWithClaude(pod.name, ep.title, ep.description, transcript);
-    res.json({ success: true, podcast: pod.name, episode: { title: ep.title, date: ep.date, link: ep.link, duration: ep.duration, description: stripHTML(ep.description).slice(0, 500), hasTranscript: !!transcript }, analysis: analysis });
+    res.json({ success: true, podcast: pod.name, episode: { title: ep.title, date: ep.date, link: ep.link, duration: ep.duration, description: ep.description, hasTranscript: ep.hasTranscript }, analysis: analysis });
   } catch(e) {
     res.json({ success: false, podcast: pod.name, error: e.message });
   }
 });
 
-app.get('/api/health', function(req, res) { res.json({ status: 'ok', podcasts: PODCASTS.length, time: new Date().toISOString() }); });
+app.get('/api/health', function(req, res) { res.json({ status: 'ok', podcasts: PODCASTS.length, timestamp: new Date().toISOString() }); });
 
 app.listen(PORT, function() { console.log('Morning Brief server running on port ' + PORT); });
